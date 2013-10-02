@@ -1,115 +1,136 @@
-var appController;
+var App, Calendar, Event, EventView, Events, app, data, _ref, _ref1, _ref2, _ref3, _ref4,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-appController = function($scope) {
-  var getData, initGraph, initMap, initProperties, initialize, redrawGraph,
-    _this = this;
-  console.log('start');
-  getData = function() {
-    return [
-      {
-        "type": "maxDispatchDistanceMiles",
-        "value": 3,
-        "weight": 1,
-        "timeRange": [10, 16],
-        "geofences": [[37.7749295, -122.4194155], [37.7900295, -122.4194155], [37.7900295, -122.4704155], [37.7749295, -122.4704155], [37.7749295, -122.4194155]]
-      }, {
-        "type": "maxDispatchDistanceMiles",
-        "value": 5,
-        "weight": 2,
-        "timeRange": [14, 8],
-        "geofences": [[37.7859295, -122.4304155], [37.7609295, -122.4504155], [37.7459295, -122.4304155], [37.7709295, -122.4154155], [37.7859295, -122.4304155]]
-      }
-    ];
-  };
-  initialize = function() {
-    console.log('init');
-    initMap();
-    initProperties();
-    return initGraph();
-  };
-  initMap = function() {
-    $scope.map = new google.maps.Map($('#map-canvas')[0], {
-      zoom: 13,
-      center: new google.maps.LatLng(37.7749295, -122.4194155),
-      mapTypeId: google.maps.MapTypeId.TERRAIN
+data = [[10, 20], [15, 25], [18, 22], [10, 15], [22, 25], [0, 2]];
+
+data.sort(function(a, b) {
+  return a[0] > b[0];
+});
+
+App = (function(_super) {
+  __extends(App, _super);
+
+  function App() {
+    _ref = App.__super__.constructor.apply(this, arguments);
+    return _ref;
+  }
+
+  App.prototype.initialize = function() {
+    var calendar, d, event, events, interval, intervals, t, _i, _len, _results;
+    events = new Events;
+    calendar = new Calendar({
+      collection: events
     });
-    return google.maps.event.addListener($scope.map, 'dragend', redrawGraph);
-  };
-  initGraph = function() {
-    var current, p, properties, time, _i, _j, _len, _ref, _results;
-    properties = (function() {
-      var _i, _len, _ref, _results;
-      _ref = $scope.properties;
+    intervals = (function() {
+      var _i, _len, _results;
       _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        p = _ref[_i];
-        if (p.containsPoint($scope.map.getCenter())) {
-          _results.push(p);
-        } else {
-          _results.push(void 0);
-        }
+      for (_i = 0, _len = data.length; _i < _len; _i++) {
+        d = data[_i];
+        _results.push(new Interval(d));
       }
       return _results;
     })();
+    t = new Tree(intervals);
+    t.findAllOverlaps();
+    t.findAllPositions();
     _results = [];
-    for (time = _i = 0; _i <= 23; time = ++_i) {
-      current = void 0;
-      _ref = $scope.properties;
-      for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-        p = _ref[_j];
-        if (p.containsTime(time)) {
-          if (!current || p.weight > current.weight) {
-            current = p;
-          }
-        }
-      }
-      _results.push(console.log(p));
+    for (_i = 0, _len = intervals.length; _i < _len; _i++) {
+      interval = intervals[_i];
+      event = new Event({
+        title: interval.values,
+        span: interval.overlaps.length,
+        position: interval.smaller
+      });
+      _results.push(events.add(event));
     }
     return _results;
   };
-  initProperties = function() {
-    var d, property;
-    return $scope.properties = (function() {
-      var _i, _len, _ref, _results;
-      _ref = getData();
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        d = _ref[_i];
-        property = new Property(d, $scope.map);
-        property.render();
-        _results.push(property);
-      }
-      return _results;
-    })();
+
+  return App;
+
+})(Backbone.Router);
+
+Calendar = (function(_super) {
+  __extends(Calendar, _super);
+
+  function Calendar() {
+    _ref1 = Calendar.__super__.constructor.apply(this, arguments);
+    return _ref1;
+  }
+
+  Calendar.prototype.el = '#calendar';
+
+  Calendar.prototype.initialize = function() {
+    return this.listenTo(this.collection, 'add', this.add);
   };
-  redrawGraph = function() {
-    var p, _i, _len, _ref, _results;
-    _ref = $scope.properties;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      p = _ref[_i];
-      if (p.containsPoint($scope.map.getCenter())) {
-        _results.push(console.log('yes!'));
-      } else {
-        _results.push(void 0);
-      }
-    }
-    return _results;
+
+  Calendar.prototype.add = function(event) {
+    var eventView;
+    eventView = new EventView({
+      model: event,
+      parent: this
+    });
+    return this.$el.append(eventView.render().$el);
   };
-  window.redrawMap = function() {
-    var p, time, _i, _len, _ref, _results;
-    time = 17;
-    _ref = $scope.properties;
-    _results = [];
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      p = _ref[_i];
-      if (p.containsTime(time)) {
-        _results.push(p.render());
-      } else {
-        _results.push(p.remove());
-      }
-    }
-    return _results;
+
+  return Calendar;
+
+})(Backbone.View);
+
+Event = (function(_super) {
+  __extends(Event, _super);
+
+  function Event() {
+    _ref2 = Event.__super__.constructor.apply(this, arguments);
+    return _ref2;
+  }
+
+  return Event;
+
+})(Backbone.Model);
+
+Events = (function(_super) {
+  __extends(Events, _super);
+
+  function Events() {
+    _ref3 = Events.__super__.constructor.apply(this, arguments);
+    return _ref3;
+  }
+
+  return Events;
+
+})(Backbone.Collection);
+
+EventView = (function(_super) {
+  __extends(EventView, _super);
+
+  function EventView() {
+    _ref4 = EventView.__super__.constructor.apply(this, arguments);
+    return _ref4;
+  }
+
+  EventView.prototype.className = 'event';
+
+  EventView.prototype.render = function() {
+    var height, interval, left, position, span, top;
+    this.$el.html('<span>' + (this.model.get('title')) + '</span>');
+    span = this.model.get('span');
+    this.$el.addClass('event' + span);
+    interval = this.model.get('title');
+    height = (interval[1] - interval[0]) * 20;
+    this.$el.height(height + 'px');
+    top = interval[0] * 20;
+    this.$el.css("top", top + 'px');
+    position = this.model.get('position');
+    left = position * this.options.parent.$el.width() / span;
+    console.log(this.$el.width());
+    this.$el.css('left', left + 'px');
+    return this;
   };
-  return google.maps.event.addDomListener(window, "load", initialize);
-};
+
+  return EventView;
+
+})(Backbone.View);
+
+app = new App;

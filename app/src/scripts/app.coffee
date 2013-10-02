@@ -1,87 +1,80 @@
-appController = ($scope) ->
-  console.log 'start'
-  # a fake function that returns the data
-  getData = () ->
-    [
-      "type" : "maxDispatchDistanceMiles"
-      "value" : 3
-      "weight" : 1
-      "timeRange" : [10, 16]
-      "geofences" : [
-        [37.7749295, -122.4194155]
-        [37.7900295, -122.4194155]
-        [37.7900295, -122.4704155]
-        [37.7749295, -122.4704155]
-        [37.7749295, -122.4194155]
-      ]
-    ,
-      "type": "maxDispatchDistanceMiles"
-      "value": 5
-      "weight": 2
-      "timeRange": [14, 8]
-      "geofences": [
-        [37.7859295, -122.4304155]
-        [37.7609295, -122.4504155]
-        [37.7459295, -122.4304155] 
-        [37.7709295, -122.4154155]
-        [37.7859295, -122.4304155]
-      ]
-    ]
+data = [
+  [10,20]
+  [15,25]
+  [18,22]
+  [10,15]
+  [22,25]
+  [0,2]
+]
 
-  initialize = ->
-    console.log 'init'
-    initMap()
-    initProperties()
-    initGraph()
+data.sort (a,b)->
+  a[0] > b[0]
 
-  initMap = ->
-    $scope.map = new google.maps.Map $('#map-canvas')[0],
-      zoom : 13
-      center : new google.maps.LatLng 37.7749295, -122.4194155
-      mapTypeId : google.maps.MapTypeId.TERRAIN
 
-    # listen to drag event to update graph  
-    google.maps.event.addListener $scope.map, 'dragend', redrawGraph
+class App extends Backbone.Router
+  initialize : ->
+    events = new Events 
     
-  initGraph = ->
-    # all the properties that interset the center
+    calendar = new Calendar
+      collection : events
 
-    properties = for p in $scope.properties
-      if p.containsPoint $scope.map.getCenter()
-        p
+     
+    intervals = (new Interval d for d in data)
+    t = new Tree intervals
+    t.findAllOverlaps()
+    t.findAllPositions()
 
-    for time in [0..23]
-      current = undefined
-      for p in $scope.properties
-        if p.containsTime time
-          if not current or p.weight > current.weight 
-            current = p
-      console.log p
-          
-
-    
-
-    # listen to drag event to update map
-
-  initProperties = ->
-    $scope.properties = for d in getData()
-      property = new Property d, $scope.map
-      property.render()
-      property    
-
-  redrawGraph = =>
-    # filter through all properties that intersect this geolocation
-    for p in $scope.properties
-      if p.containsPoint $scope.map.getCenter()
-        console.log 'yes!' 
-
-  window.redrawMap = =>
-    time = 17
-    for p in $scope.properties
-      if p.containsTime time
-        p.render()
-      else
-        p.remove()    
-
-  google.maps.event.addDomListener window, "load", initialize
+    for interval in intervals 
+      event = new Event
+        title : interval.values
+        span : interval.overlaps.length
+        position : interval.smaller
+      events.add event  
   
+  
+
+class Calendar extends Backbone.View
+  el : '#calendar'
+
+  initialize : ->
+    @listenTo @collection, 'add', @add
+
+  add : (event) ->
+    eventView = new EventView
+      model : event
+      parent : @
+
+    @$el.append eventView.render().$el
+
+
+class Event extends Backbone.Model
+
+class Events extends Backbone.Collection
+
+class EventView extends Backbone.View
+  className : 'event'
+  render: ->
+    @$el.html '<span>'+( @model.get 'title' )+'</span>'
+    
+    # set width
+    span = @model.get 'span'
+    @$el.addClass 'event'+span
+    
+    # set height
+    interval = @model.get 'title'
+    height = (interval[1] - interval[0] ) * 20
+    @$el.height height + 'px'
+    
+    # set top position
+    top = interval[0] * 20
+    @$el.css "top",top+'px'
+
+    # set left position
+    position = @model.get 'position'
+    left = position * @options.parent.$el.width() / span
+    console.log @$el.width()
+    @$el.css 'left',left+'px'
+    @
+
+app = new App
+    

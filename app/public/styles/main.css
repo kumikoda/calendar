@@ -1,6 +1,28 @@
 .container {
   max-width: 940px;
+  position: relative;
 }
-#map-canvas {
-  height: 500px;
+.calendar {
+  width: 100%;
+  position: relative;
+}
+.event {
+  position: absolute;
+  display: block;
+  border: 1px solid #000;
+}
+.event.event1 {
+  width: 100%;
+}
+.event.event2 {
+  width: 50%;
+}
+.event.event3 {
+  width: 33.333%;
+}
+.event.event4 {
+  width: 25%;
+}
+.event.event5 {
+  width: 20%;
 }

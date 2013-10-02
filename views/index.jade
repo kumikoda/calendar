@@ -6,18 +6,17 @@ block styles
   link(rel='stylesheet', href='/styles/main.css')
 
 block scripts
+
   script(src='/vendor/jquery.min.js')
-  script(src='/vendor/angular.min.js')
   script(src='/vendor/bootstrap.min.js')
-  script(src='/vendor/crossfilter.min.js')
-  script(src='https://maps.googleapis.com/maps/api/js?key=AIzaSyDh51Oc4-bpuZ0kTHP5qNXit_yn7_wCOGc&sensor=true&libraries=geometry')
-  script(src='/scripts/maps.js')
-  script(src='/scripts/app.js')
+  script(src='http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js')
+  script(src='http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js')
+  script(src='/scripts/IntervalTree.js')
+  script(src='/scripts/app2.js')
   
 block content
-  .container(ng-app)
-    h1 Hello world! 
-    #map-canvas(ng-controller='appController')
+  .container
+    #calendar
 
   
 
